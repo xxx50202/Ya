@@ -58,7 +58,12 @@ document.addEventListener('DOMContentLoaded', () => {
             console.log("user", user)
           document.querySelector('#hao123').classList.remove('none');
           document.querySelector('#ha').classList.add('none');
-        
+          var btnTer = document.getElementById('tetris');
+          btnTer.addEventListener('click',()=>{
+            window.location.href="./tetris.html"
+          }
+          );
+          
           changeErrMessage('');
           const btnLogOut = document.getElementById('logout');
           btnLogOut.addEventListener('click', () => {
