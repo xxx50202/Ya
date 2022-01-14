@@ -1,0 +1,543 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<title>Tetris</title>
+	<style>
+		html,body{
+			width: 100%;
+			overflow: hidden;
+		}
+		*{
+			padding: 0;
+			margin: 0;
+		}
+		#canvas{
+			background-color: #000;
+			float: left;
+		}
+
+		#box{
+			width: 600px;
+			margin: 0 auto;
+		}
+		#box:after{
+			content: '';
+			display: block;
+			clear: both;
+		}
+		.scorebox{
+			float: left;
+			height: 540px;
+			width: 300px;
+			-webkit-box-sizing: border-box;
+			-moz-box-sizing: border-box;
+			box-sizing: border-box;
+			background-color: #5e5e5e;
+			padding-top: 40px;padding-left: 30px;
+		}
+		.scorebox p{
+			color: #fff;
+		}
+		#next{
+			display: block;
+			background-color: #000;
+			width: 120px;
+			height: 120px;
+		}
+		.btns button{
+			font-size: 14px;
+			line-height: 28px;
+			color: #333;
+			background-color: #eee;
+			border-radius: 5px;
+			padding: 0 16px;
+			margin-right: 15px;
+		}
+	</style>
+</head>
+<body>
+	<div id="box">
+		<canvas id="canvas" width="300" height="540"></canvas>
+		<div class="scorebox">
+			<p>Playing Time: <span id="game-time">00:00:00</span></p><br>
+			<p>Score: <span id="score">0</span></p><br>
+			<p>Next：</p><br>
+			<canvas id="next" width="120" height="120"></canvas><br>
+			<p class="btns"><button id="pause">Pause</button><button id="restart">Restart</button></p>
+		</div>
+	</div>
+		
+	<script>
+
+		var ROW = 10;
+		var COL = 18;
+
+		var SCORE = 0;
+
+		var bPause = false;
+
+		var area = new Array(COL);
+		for(var i=0; i<area.length; i++){
+			area[i] = new Array(ROW).fill(0);
+		}
+
+		var data = {
+			'o':[
+				[1, 1],
+				[1, 1]
+			],
+			's':[
+				[2, 0, 0],
+				[2, 2, 0],
+				[0, 2, 0]
+			],
+			'5':[
+				[0, 0, 3],
+				[0, 3, 3],
+				[0, 3, 0]
+			],			
+			'S':[
+				[1, 0, 0],
+				[1, 1, 1],
+				[0, 0, 1],
+			],
+			'l':[
+				[4, 0, 0],
+				[4, 0, 0],
+				[4, 4, 0]
+			],
+			't':[
+				[5, 5, 5],
+				[0, 5, 0],
+				[0, 0, 0]
+			],
+			'T':[
+				[1, 1, 1],
+				[0, 1, 0],
+				[0, 1, 0]
+			],
+			'j':[
+				[0, 0, 6],
+				[0, 0, 6],
+				[0, 6, 6]
+			],
+			'|':[
+				[0, 7, 0, 0],
+				[0, 7, 0, 0],
+				[0, 7, 0, 0],
+				[0, 7, 0, 0]
+			]
+		};
+		var aColor = ['', '#fff', '#0000FF', '#00FF00', '#CC00FF', '#CCFFFF','#FFFF33','#99FFFF']
+		var sKey = 'os5ltj|';
+
+		var canvas = document.getElementById('canvas');
+		var ctx = canvas.getContext('2d');
+		var nextCanvas = document.getElementById('next');
+		var nextctx = nextCanvas.getContext('2d');
+		var timer = null;
+
+		var cur = null;
+
+		var next = null;
+		var oldTime = Date.now();
+		var gameTime = 0;
+		var n = 0;
+
+		var step = 1000;
+
+
+		var scoreEle = document.getElementById('score');
+		var pauseEle = document.getElementById('pause');
+		var restartEle = document.getElementById('restart')
+		var gameTimeEle = document.getElementById('game-time');
+
+	
+		createBox();
+
+		timer = requestAnimationFrame(animate);
+
+		function animate(){
+
+			n+=Date.now()-oldTime;
+
+			gameTime+=Date.now()-oldTime;
+			if(n>=step){
+				n = 0;
+
+				updateGameTime()
+			
+				changeDifficulty();
+
+				if(collide(cur)){
+					if(cur.y<0){						
+						gameover()
+					}else{
+						mergeBoxArea()
+						cur = null;
+						createBox()
+					}
+				}else{
+					cur.y++;
+				}
+			}
+			oldTime = Date.now();
+			drawArea();
+			drawNextBox();
+			timer = requestAnimationFrame(animate);
+		}
+		pauseEle.addEventListener('click', function(){
+			var html = this.innerHTML;
+
+			if(html === 'Pause'){
+				pause();
+				this.innerHTML = 'continue';
+			}else{
+				start();
+				this.innerHTML = 'Pause';
+			}
+		})
+
+		restartEle.addEventListener('click', function(){
+			restart();
+		})
+
+		document.addEventListener('keydown', function(ev){
+			if(bPause || !cur){
+				return false;
+			}
+			var keycode = ev.keyCode;
+			switch(keycode){
+				//左
+				case 37:
+					if(bMove(cur, -1)){
+						cur.x--;
+					}
+				break;
+
+				//右
+				case 39:
+					if(bMove(cur, 1)){
+						cur.x++;
+					}
+				break;
+
+				//下
+				case 40:
+					if(collide(cur)){
+						if(cur.y<0){							
+							gameover()
+						}else{
+							mergeBoxArea()
+							cur = null;
+							createBox()							
+						}
+					}else{
+						cur.y++;
+					}
+				break;
+
+				//上
+				case 38:
+					
+					var rotateRes = bRotate(cur);
+					
+					if(rotateRes === true){
+						cur.box = rotateBox(cur.box);
+
+					}else if(rotateRes === false){
+						console.log('The tetris do not be rotated. ')
+					}else{
+						cur.x = rotateRes;
+						cur.box = rotateBox(cur.box);
+					}
+				break;
+			}
+		})
+
+		function updateGameTime(){
+			var n = gameTime/1000;
+			var h = Math.floor(n/(60*60));
+			n%=60*60;
+			var m = Math.floor(n/60);
+			n%=60;
+			var s = Math.floor(n);
+			h = h<9?'0'+h:''+h;
+			m = m<9?'0'+m:''+m;
+			s = s<9?'0'+s:''+s;
+			gameTimeEle.innerHTML = h+':'+m+':'+s;
+		}
+
+
+		function changeDifficulty(){
+			
+			if(gameTime>=1000*60*5){
+				step = 300;
+			
+			}else if(gameTime>=1000*60*3){
+				step = 500;
+			
+			}else if(gameTime>=1000*60*2){
+				step = 700;
+			}
+		}
+
+
+		function drawNextBox(){
+			nextctx.clearRect(0, 0, 300, 540)
+			nextctx.save()
+			nextctx.scale(30, 30)
+			next&&drawcube(nextctx, next.box)	
+			nextctx.restore();			
+		}
+
+		
+		function drawArea(){
+			ctx.clearRect(0, 0, 300, 540)
+			ctx.save()
+			ctx.scale(30, 30)
+			//ctx.fillStyle = '#fff';
+			
+			drawcube(ctx, area)	
+			
+			drawcube(ctx, cur.box, cur.x, cur.y)				
+			ctx.restore();
+		}
+
+		function drawcube(ctx, arr, x, y){
+			x = x || 0;
+			y = y || 0;
+			for(var i=0; i<arr.length; i++){
+				for(var j=0; j<arr[i].length; j++){
+
+					if(arr[i][j] !== 0){
+						ctx.fillStyle = aColor[arr[i][j]];
+						ctx.fillRect(j+x, i+y, 1, 1)
+					}
+				}
+			}
+		}
+
+		
+		function isRemove(area){
+			var arr = [];
+			for(var i=0; i<area.length; i++){
+				var remove = true;
+				for(var j=0; j<area[i].length; j++){
+					if(area[i][j] == 0){
+						remove = false;
+					}
+				}
+				if(remove){
+					arr.push(i)
+				}
+			}
+			return arr;
+		}
+
+		function bRotate(cur){
+			var _cur = {x: cur.x, y: cur.y, box: rotateBox(cur.box)};	
+			if(collide(_cur) || bMove(_cur, 0) === false){
+				for(var i=0; i<2; i++){
+					if(_cur.x<4 && bMove(_cur, 1)){
+						_cur.x++;
+					}
+					if(_cur.x>6 && bMove(_cur, -1)){
+						_cur.x--;
+					}
+		
+					if(collide(_cur) === false && bMove(_cur, 0)){
+						return _cur.x
+					}else{
+						return false
+					}
+				}
+			}else{
+				return true;
+			}
+		}
+
+	
+		function bMove(cur, n){
+			var x = cur.x+n;
+			for(var i=0; i<cur.box.length; i++){
+				for(var j=0; j<cur.box[i].length; j++){
+					if(cur.box[i][j]!==0){
+
+						if(j+x<0 || j+x==area[0].length || ( i+cur.y>=0 && j+x>=0 && area[i+cur.y] && area[i+cur.y][j+x]!==0)){
+							return false
+						}
+					}
+				}
+			}
+			return true;
+		}
+
+		function rotateBox(arr){
+
+			var res = []; 
+
+			for(var i=0; i<arr.length; i++){
+				res.push([]);
+			}
+
+			for(var y=0; y<arr.length; y++){
+				for(var x=0; x<arr[y].length; x++ ){
+					res[arr.length-1-y][x] = arr[x][y];
+				}
+			}
+			arr = null;
+			return res;
+		}
+
+
+		function collide(cur){
+			var box = cur.box;
+			var len = box.length;
+			var x = cur.x;
+			var y = cur.y+1;
+
+			for(var i=0; i<len; i++){
+				if(i+y>=0){
+					for(var j=0; j<len; j++){
+						if(box[i][j] !== 0){
+		
+							if(i+y>=area.length || (i+y<area.length && area[i+y][j+x] !== 0)){
+								return true
+							}
+						}
+					}
+				}
+			}		
+			return false;
+		}
+
+
+		function createBox(){
+			if(next == null){
+				var rnd = Math.floor(Math.random()*sKey.length);
+				box = data[sKey[rnd]];
+
+				next = {
+					x: Math.floor((10-box[0].length)/2),
+					y: 0-(box.length),
+					box: box
+				}
+			}
+
+			if(cur == null){
+
+				cur = next;
+
+				var rnd = Math.floor(Math.random()*sKey.length);
+				box = data[sKey[rnd]];
+
+				next = {
+					x: Math.floor((10-box[0].length)/2),
+					y: 0-(box.length),
+					box: box
+				}
+			}
+		}
+
+
+		function mergeBoxArea(){
+			var len = cur.box.length;
+			var y = cur.y;
+			var x = cur.x;
+
+			for(var i=0; i<len; i++){
+				if(i+y>=0){
+					for(var j=0; j<len; j++){
+						if(cur.box[i][j] !==0 && area[i+y][j+x] == 0){
+							area[i+y][j+x] = cur.box[i][j];
+						}
+					}	
+				}
+			}				
+
+			var arr = isRemove(area);
+			if(arr.length !== 0){
+				for(var i=0; i<arr.length; i++){
+					area.splice(arr[i], 1)
+					area.unshift(new Array(ROW).fill(0))
+				}
+		
+				SCORE+=Math.pow(2, arr.length)
+				scoreEle.innerHTML = SCORE;
+                if(SCORE >1){
+                    firebase.auth().onAuthStateChanged(user => {
+                        if(user){
+                            const aaa = db.collection('aaa').doc(user.uid);
+                            const admin = '1';
+                            aaa.set({
+                                admin
+                            });
+                        }
+
+
+                    })
+                    window.location.reload("./index.html");
+                }
+			};
+		}
+
+
+		function gameover(){	
+			cancelAnimationFrame(timer);
+			alert('GameOver,Your socre is: '+SCORE)
+
+			restart()
+		}
+
+		
+		function restart(){
+			for(var i=0; i<area.length; i++){
+				for(var j=0; j<area[i].length; j++){
+					area[i][j] = 0;
+				}
+			}
+			cancelAnimationFrame(timer);
+			timer = requestAnimationFrame(animate);
+
+			bPause = false;
+			pauseEle.innerHTML = 'Pause';
+			gameTime = 0;
+			updateGameTime();
+			cur = null;
+		
+			createBox();
+		}
+
+		
+		function pause(){
+			cancelAnimationFrame(timer);
+			bPause = true;
+		}
+
+		
+		function start(){
+			timer = requestAnimationFrame(animate);
+			bPause = false;
+		}
+	</script>
+    <script src="https://www.gstatic.com/firebasejs/8.0.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.0.1/firebase-auth.js"></script>
+    <script>
+      var firebaseConfig = {
+    apiKey: "AIzaSyD79RIj4dIW9OJvuq4JN7gOMAyozeGAgTU",
+    authDomain: "ntut-final-1bf58.firebaseapp.com",
+    projectId: "ntut-final-1bf58",
+    storageBucket: "ntut-final-1bf58.appspot.com",
+    messagingSenderId: "908139157246",
+    appId: "1:908139157246:web:dd0f4ea7f51d5c6f96b7af"
+    };
+      // Initialize Firebase
+      firebase.initializeApp(firebaseConfig);
+      
+    </script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/vue/2.6.10/vue.min.js"></script>
+</body>
+</html>

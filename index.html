@@ -1,0 +1,81 @@
+
+<!DOCTYPE html>
+
+<html>
+<head>
+<title>Create a nice login form using CSS3 and HTML5</title>
+<link rel="stylesheet" href="./style.css">
+<link rel="stylesheet" href="https://formden.com/static/assets/demos/bootstrap-iso/bootstrap-iso/bootstrap-iso.css" />
+
+
+</head>
+
+<body>
+<section id="ha">
+    <form id="login">
+        <h1>Log In</h1>
+        <fieldset id="inputs">
+            <input id="username" type="text" placeholder="Username" autofocus required>   
+            <input id="password" type="password" placeholder="Password" required>
+        </fieldset>
+        <fieldset id="actions">
+            <button type="button" id="submit">Log in</button>
+            <a href="javascript:document.querySelector('#ha').classList.add('none'); document.querySelector('#haha').classList.remove('none');">register</a>
+        </fieldset>
+        <div class="error" id="error-message"></div>
+
+        <a href="/slick-login-form-with-html5-css3" id="back">Back to article...</a>
+    </form>
+</section>
+
+<section id="haha" class="none">
+    <form id="login">
+        <h1>register</h1>
+        <fieldset id="inputs">
+            <input id="username1" type="text" placeholder="Username" autofocus required>   
+            <input id="password1" type="password" placeholder="Password" required>
+        </fieldset>
+        <fieldset id="actions">
+            <button type="button" id="submit1">submit</button>
+            <a href="javascript:document.querySelector('#haha').classList.add('none'); document.querySelector('#ha').classList.remove('none');">back</a>
+        </fieldset>
+        <div class="error" id="error-message"></div>
+
+        <a href="/slick-login-form-with-html5-css3" id="back">Back to article...</a>
+    </form>
+</section>
+
+
+
+<section id="hao123" class="none">
+    <img src="./ya.jpg" >
+    <a href="./tetris.html" id="tetris">tetris</a>
+    <div class="bootstrap-iso">
+        <button type="button" id="logout" class="btn btn-primary btn-lg">Log Out</button>
+    </div>
+
+</section>
+
+
+<script src="https://www.gstatic.com/firebasejs/8.0.1/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.0.1/firebase-auth.js"></script>
+<script>
+  var firebaseConfig = {
+    apiKey: "AIzaSyDjRByPIGOSZe1Ja3zsnNLMJw6PzpijUJc",
+    authDomain: "ntut-website-test.firebaseapp.com",
+    projectId: "ntut-website-test",
+    storageBucket: "ntut-website-test.appspot.com",
+    messagingSenderId: "793632951614",
+    appId: "1:793632951614:web:14684ad56bd620ee7b706f",
+    measurementId: "G-KS15YM4V28"
+};
+  // Initialize Firebase
+  firebase.initializeApp(firebaseConfig);
+  
+</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/vue/2.6.10/vue.min.js"></script>
+<script src="main.js"></script>
+
+
+</body>
+</html>
