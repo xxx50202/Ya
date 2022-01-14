@@ -1,8 +1,8 @@
 document.addEventListener('DOMContentLoaded', () => {
     function createUser() {
-        let email = document.getElementById('username1').value;
+        let email = document.getElementById('username1').value;;
         let password = document.getElementById('password1').value;
-        let admin = '0';
+        //let admin = '0';
 
         firebase
           .auth()
@@ -10,11 +10,13 @@ document.addEventListener('DOMContentLoaded', () => {
           .then(() => {
             document.querySelector('#haha').classList.add('none');
           })
+
           .catch(error => {
             changeErrMessage(error.message);
           });
       }
     
+
     
       function signIn() {
         let email = document.getElementById('username').value;
@@ -58,7 +60,12 @@ document.addEventListener('DOMContentLoaded', () => {
             console.log("user", user)
           document.querySelector('#hao123').classList.remove('none');
           document.querySelector('#ha').classList.add('none');
-        
+          var btnTer = document.getElementById('tetris');
+          btnTer.addEventListener('click',()=>{
+            window.location.href="./tetris.html"
+          }
+          );
+          
           changeErrMessage('');
           const btnLogOut = document.getElementById('logout');
           btnLogOut.addEventListener('click', () => {
